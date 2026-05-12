@@ -59,9 +59,13 @@ app.post('/v1/image', async c => {
     ? `<link href="https://fonts.googleapis.com/css2?family=${googleFonts.split(',').map((f: string) => f.trim().replace(/ /g, '+')).join('&family=')}&display=swap" rel="stylesheet">`
     : ''
 
+  // Inject fontsLink + css into existing HTML's <head>, or wrap if no <html>
+  const inject = `${fontsLink}<style>${css}</style>`
   const fullHtml = /<html[\s>]/i.test(html)
-    ? html
-    : `<!DOCTYPE html><html><head><meta charset="utf-8">${fontsLink}<style>${css}</style></head><body>${html}</body></html>`
+    ? (/<head[\s>]/i.test(html)
+        ? html.replace(/<head[^>]*>/i, (m) => `${m}${inject}`)
+        : html.replace(/<html[^>]*>/i, (m) => `${m}<head>${inject}</head>`))
+    : `<!DOCTYPE html><html><head><meta charset="utf-8">${inject}</head><body>${html}</body></html>`
 
   const id = randomUUID()
   const filepath = join(STORAGE, `${id}.png`)
